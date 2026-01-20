@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+!DOCKER.md
+
+# Build outputs
+output/
+*/output/
+*.png
+*.svg
+*.html
+
+# Kubernetes configs (not needed for Docker)
+k8s/
+*/k8s/
+
+# Scripts for other methods
+scripts/generate-erd.sh
+*/scripts/generate-erd.sh
+
+# Example files
+example/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

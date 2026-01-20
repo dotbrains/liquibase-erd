@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-mydb}
+      POSTGRES_USER: ${DB_USER:-dbuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-temp-password}
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dbuser} -d ${DB_NAME:-mydb}"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data
+
+  schemacrawler:
+    build:
+      context: ./schemacrawler-erd
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-mydb}
+      DB_USER: ${DB_USER:-dbuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-temp-password}
+      SCHEMA_NAME: ${SCHEMA_NAME:-public}
+      CHANGELOG_FILE: ${CHANGELOG_FILE:-/workspace/db/changelog.xml}
+    volumes:
+      - ${CHANGELOG_DIR:-.}:/workspace
+      - ${OUTPUT_DIR:-./schemacrawler-erd/output}:/output
+      - ./schemacrawler-erd/generate-erd.sh:/generate-erd.sh:ro
+    command: /generate-erd.sh
+    profiles:
+      - schemacrawler
+
+  schemaspy:
+    build:
+      context: ./schemaspy-erd
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-mydb}
+      DB_USER: ${DB_USER:-dbuser}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-temp-password}
+      SCHEMA_NAME: ${SCHEMA_NAME:-public}
+      CHANGELOG_FILE: ${CHANGELOG_FILE:-/workspace/db/changelog.xml}
+    volumes:
+      - ${CHANGELOG_DIR:-.}:/workspace
+      - ${OUTPUT_DIR:-./schemaspy-erd/output}:/output
+      - ./schemaspy-erd/generate-erd.sh:/generate-erd.sh:ro
+    command: /generate-erd.sh
+    profiles:
+      - schemaspy

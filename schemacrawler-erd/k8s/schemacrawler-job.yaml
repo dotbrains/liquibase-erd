@@ -1,0 +1,66 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: schemacrawler-erd
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  activeDeadlineSeconds: 1200
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: schemacrawler
+        image: eclipse-temurin:17-jre
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            set -e
+            set -x
+            echo "Installing dependencies..."
+            apt-get update -qq && apt-get install -y -qq graphviz && \
+            echo "Using pre-copied SchemaCrawler from /sc..." && \
+            cd /sc/schemacrawler-16.21.2-bin && \
+            ls -la lib/ && \
+            echo "Generating PNG diagram..." && \
+            java -cp "lib/*" schemacrawler.Main \
+              --server=postgresql \
+              --host=db-erd-temp-rw.default.svc.cluster.local \
+              --port=5432 \
+              --database=mydb \
+              --user=dbuser \
+              --password=temp-password \
+              --info-level=maximum \
+              --command=schema \
+              --schemas=public \
+              --weak-associations \
+              --portable-names \
+              --output-format=png \
+              --output-file=/output/public-erd.png && \
+            echo "Generating SVG diagram..." && \
+            java -cp "lib/*" schemacrawler.Main \
+              --server=postgresql \
+              --host=db-erd-temp-rw.default.svc.cluster.local \
+              --port=5432 \
+              --database=mydb \
+              --user=dbuser \
+              --password=temp-password \
+              --info-level=standard \
+              --command=schema \
+              --schemas=public \
+              --output-format=svg \
+              --output-file=/output/public-erd.svg && \
+            echo "Done! Files generated in /output" && \
+            echo "Sleeping for 60 seconds to allow file copy..." && \
+            sleep 60
+        volumeMounts:
+        - name: output
+          mountPath: /output
+        - name: schemacrawler
+          mountPath: /sc
+      volumes:
+      - name: output
+        emptyDir: {}
+      - name: schemacrawler
+        emptyDir: {}

@@ -1,0 +1,32 @@
+# Optional Helm values file for CloudNativePG
+# This file is not used by the generate-erd.sh script
+# It's provided as a reference if you prefer Helm-based deployment
+
+cluster:
+  name: db-erd-temp
+  instances: 1
+  
+  initdb:
+    database: mydb
+    owner: dbuser
+    secret:
+      name: db-erd-temp-auth
+  
+  bootstrap:
+    initdb:
+      database: mydb
+      owner: dbuser
+  
+  storage:
+    size: 1Gi
+  
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 100m
+    limits:
+      memory: 1Gi
+      cpu: 500m
+  
+  monitoring:
+    enabled: false

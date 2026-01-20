@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: schemaspy-erd
+  namespace: default
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 2
+  activeDeadlineSeconds: 1200
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: schemaspy
+        image: eclipse-temurin:17-jre
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            set -e
+            set -x
+            echo "Installing dependencies..."
+            apt-get update -qq && apt-get install -y -qq graphviz && \
+            echo "Using pre-copied SchemaSpy from /sp..." && \
+            cd /sp && \
+            echo "Generating HTML documentation..." && \
+            java -jar schemaspy.jar \
+              -t pgsql11 \
+              -dp postgresql.jar \
+              -host db-erd-temp-rw.default.svc.cluster.local \
+              -port 5432 \
+              -db mydb \
+              -u dbuser \
+              -p temp-password \
+              -s public \
+              -o /output \
+              -noimplied \
+              -norows \
+              -vizjs && \
+            echo "Extracting diagrams..." && \
+            if [ -f /output/diagrams/summary/relationships.real.large.png ]; then \
+              cp /output/diagrams/summary/relationships.real.large.png /output/public-erd.png; \
+            fi && \
+            if [ -f /output/diagrams/summary/relationships.real.large.svg ]; then \
+              cp /output/diagrams/summary/relationships.real.large.svg /output/public-erd.svg; \
+            fi && \
+            echo "Done! Files generated in /output" && \
+            echo "Sleeping for 60 seconds to allow file copy..." && \
+            sleep 60
+        volumeMounts:
+        - name: output
+          mountPath: /output
+        - name: schemaspy
+          mountPath: /sp
+      volumes:
+      - name: output
+        emptyDir: {}
+      - name: schemaspy
+        emptyDir: {}
