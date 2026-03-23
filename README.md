@@ -1,5 +1,7 @@
 # Liquibase ERD 💧
 
+[![License: PolyForm Shield 1.0.0](https://img.shields.io/badge/License-PolyForm%20Shield%201.0.0-blue.svg)](https://polyformproject.org/licenses/shield/1.0.0/)
+
 > Automated Entity-Relationship Diagram (ERD) generation from Liquibase changelogs using Kubernetes and PostgreSQL.
 
 This repository contains two complementary tools for generating database ERD documentation from Liquibase changelogs. Both use a similar workflow: generating SQL from Liquibase in offline mode, spinning up a temporary PostgreSQL cluster, applying the schema, and reverse-engineering it into diagrams.
